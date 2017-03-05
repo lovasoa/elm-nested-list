@@ -1,6 +1,6 @@
 module NestedList exposing (..)
 
-{-| Module description
+{-|  Nested lists and associated Json decoders and encoders for Elm. 
 
 ## Definition
 
