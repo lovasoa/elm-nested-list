@@ -1,4 +1,6 @@
-# elm-base-repo
+# lovasoa/elm-nested-list
+
+[![Build Status](https://travis-ci.org/lovasoa/elm-nested-list.svg?branch=master)](https://travis-ci.org/lovasoa/elm-nested-list)
 
 Nested lists (`[[1,2,[3]],4]`) in Elm.
 
