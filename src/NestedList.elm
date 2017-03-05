@@ -17,7 +17,7 @@ module NestedList exposing (..)
 @docs encode
 
 ## Functions
-@docs flatten
+@docs map, reduce, flatten
 -}
 
 import Json.Decode
@@ -31,19 +31,46 @@ type NestedList a
     | Nested (List (NestedList a))
 
 
+{-| Transform a nested list
+
+    >>> map ((+)1) (Nested [Element 1, Nested [Element 2]])
+    Nested [Element 2, Nested [Element 3]]
+-}
+map : (a -> b) -> NestedList a -> NestedList b
+map mapper nested =
+    case nested of
+        Element element ->
+            mapper element
+                |> Element
+
+        Nested elements ->
+            List.map (map mapper) elements
+                |> Nested
+
+
+{-| Reduce a nested list with a reducer that takes a non-nested list of object and returns a single object
+
+    >>> reduce List.sum (Nested [Nested [Element 1, Element 2], Element 3])
+    6
+-}
+reduce : (List b -> b) -> NestedList b -> b
+reduce reducer tree =
+    case tree of
+        Element element ->
+            element
+
+        Nested elements ->
+            List.map (reduce reducer) elements |> reducer
+
+
 {-| Flatten a NestedList to a normal List
 
     >>> flatten (Nested [ Nested [ Element 1, Element 2, Nested [ Element 3 ] ], Element 4 ])
     [1,2,3,4]
 -}
 flatten : NestedList a -> List a
-flatten list =
-    case list of
-        Element element ->
-            [ element ]
-
-        Nested sublist ->
-            List.concatMap flatten sublist
+flatten =
+    map List.singleton >> reduce List.concat
 
 
 {-| Decode a nested list like [[1,2,[3]],4]
@@ -72,15 +99,12 @@ decode baseDecoder =
 {-| Encode a nested list in JSON
 
     >>> import Json.Encode
-    >>> Json.Encode.encode 0 (encode Json.Encode.int (Nested [Nested [Element 1, Element 2], Element 3]))
-    "[[1,2],3]"
+    >>> let
+    ...    nestedList = Nested [Nested [Element 1, Nested [Element 2]], Element 3]
+    ... in
+    ...    Json.Encode.encode 0 (encode Json.Encode.int nestedList)
+    "[[1,[2]],3]"
 -}
 encode : (a -> Json.Encode.Value) -> NestedList a -> Json.Encode.Value
-encode baseEncoder list =
-    case list of
-        Element element ->
-            baseEncoder element
-
-        Nested elements ->
-            List.map (encode baseEncoder) elements
-                |> Json.Encode.list
+encode baseEncoder =
+    map baseEncoder >> reduce Json.Encode.list
